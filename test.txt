@@ -1,1 +1,142 @@
-test
+<?php
+$link = mysql_connect('localhost','root','');
+$algo = mysql_select_db('algo',$link);
+if($algo){
+	//echo 'database connected';
+	
+	class demo{
+		public function sumPoints($nodeid){
+			if($nodeid>0){
+				$sql = "SELECT * FROM tables WHERE user_id_2=".$nodeid;
+				$query_result = mysql_query($sql);
+				
+				$left_node = array(); $right_node = array(); $count=0;
+				
+				while($data = mysql_fetch_assoc($query_result)){
+					if($count==0){
+						$left_node['id'] = $data['id'];
+						$left_node['points'] = $data['points'];
+					}else{
+						$right_node['id'] = $data['id'];
+						$right_node['points'] = $data['points'];
+					}
+					$count++;
+				}
+				
+				if(count($left_node)>0 && count($right_node)>0){
+					return $this->sumPoints($left_node['id']) + $this->sumPoints($right_node['id']) + ($left_node['points']+$right_node['points']);
+				}else if(count($left_node)>0 && count($right_node)==0){
+					return $this->sumPoints($left_node['id'])+$left_node['points'];
+				}else if(count($left_node)==0 && count($right_node)>0){ // THIS CONDITION WILL NEVER COME
+					return $this->sumPoints($right_node['id'])+$right_node['points'];
+				}else{
+					return 0;
+				}
+			}else{
+				return 0;
+			}
+		}
+		
+		protected function countChild($nodeid){
+			if($nodeid>0){
+				$sql = "SELECT * FROM tables WHERE user_id_2=".$nodeid;
+				$query_result = mysql_query($sql);
+				
+				$left_node = 0; $right_node = 0; $count=0;
+				while($data = mysql_fetch_assoc($query_result)){
+					if($count==0){
+						$left_node = $data['id'];
+					}else{
+						$right_node = $data['id'];
+					}
+					$count++;
+				}
+				
+				if($left_node>0 && $right_node>0){
+					return $this->countChild($left_node) + $this->countChild($right_node)+2;
+				}else if($left_node>0 && $right_node==0){
+					return $this->countChild($left_node)+1;
+				}else if($left_node==0 && $right_node>0){ // THIS CONDITION WILL NEVER COME
+					return $this->countChild($right_node);
+				}else{
+					return 0;
+				}
+			}else{
+				return 0;
+			}
+		}
+		
+		protected function findLastNode($nodeid){
+			if($nodeid>0){
+				$sql = "SELECT * FROM tables WHERE user_id_2=".$nodeid;
+				$query_result = mysql_query($sql);
+				
+				$left_node = 0; $right_node = 0; $count=0;
+				while($data = mysql_fetch_assoc($query_result)){
+					if($count==0){
+						$left_node = $data['id'];
+					}else{
+						$right_node = $data['id'];
+					}
+					$count++;
+				}
+				if($left_node==0 || $right_node==0){
+					return $nodeid;
+				}else{
+					$total_left = $this->countChild($left_node);
+					$total_right = $this->countChild($right_node);
+					if($total_left > $total_right){
+						// ADD INTO RIGHT
+						return $this->findLastNode($right_node);
+					}else if($total_right > $total_left || $total_left==0){
+						// ADD INTO LEFT
+						return $this->findLastNode($left_node);
+					}
+				}
+			}else{
+				return 0;
+			}
+		}
+		
+		public function counting($MAIN_NODE){
+			$sql = "SELECT * FROM tables WHERE user_id_2=".$MAIN_NODE;
+			$data1 = mysql_query($sql);
+			$left_node = 0; $right_node = 0; $count=0;
+			while($data = mysql_fetch_assoc($data1)){
+				if($count==0){
+					$left_node = $data['id'];
+				}else{
+					$right_node = $data['id'];
+				}
+				$count++;
+			}
+			
+			if($left_node>0 && $right_node>0){
+				$total_left = $this->countChild($left_node);
+				$total_right = $this->countChild($right_node);
+				if($total_left > $total_right){
+					// ADD INTO RIGHT
+					$find_last_node = $this->findLastNode($right_node);
+				}else if($total_right > $total_left || $total_left==0){
+					// ADD INTO LEFT
+					$find_last_node = $this->findLastNode($left_node);
+				}
+			}else if($left_node>0 && $right_node==0){
+				// ADD IN RIGHT
+				$find_last_node = $this->findLastNode($left_node);
+			}else if($left_node==0){
+				// ADD IN LEFT
+				$find_last_node = $MAIN_NODE;
+			}
+			echo $find_last_node; exit;
+		}
+	}
+	
+	$obj = new demo();
+	//$obj->counting(3);
+	$sum = $obj->sumPoints(4);
+	echo $sum; exit;
+}else{
+	//echo 'database not connected';
+}
+?>
